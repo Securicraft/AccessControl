@@ -3,12 +3,12 @@ Securicraft/Securicraft is a ✨ special ✨ repository because its `README.md` 
 You can click the Preview link to take a look at your changes.
 --->
 This repository for BUDHOST access control system
-HOWTO:
+[HOWTO]:
 1. edit controller_v1.pyx
 2. ./comply.sh
 3. copy *.so under home/pi/Createdata/build/lib.linux-armv7l-3.9 to /home/pi/controller_v1.so
 4. run R.py
-DATABASE:
+[DATABASE]:
 1. MS SQL
 2. MySQL
 3. flat file (default named "userinfo.txt")
