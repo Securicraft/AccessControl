@@ -8,7 +8,8 @@ This repository for BUDHOST access control system
 1. edit controller_v1.pyx
 2. ./comply.sh
 3. rename *.so to /home/pi/controller_v1.so
-4. run R.py
+4. copy controller.so to your pi zero w
+5. run R.py on destination pi zero w
 
 [DATABASE]
 1. MS SQL
