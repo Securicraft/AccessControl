@@ -6,7 +6,7 @@ This repository for BUDHOST access control system
 HOWTO:
 1. edit controller_v1.pyx
 2. ./comply.sh
-3. copy *.so under home/pi/Createdata/build/lib.linux-armv7l-3.9 to /home/pi/controller.so
+3. copy *.so under home/pi/Createdata/build/lib.linux-armv7l-3.9 to /home/pi/controller_v1.so
 4. run R.py
 DATABASE:
 1. MS SQL
