@@ -4,7 +4,7 @@
 #include "pico/binary_info.h"
 
 /*compile with
- * cd /home/pi/pico/pico-examples/Hongsa/build
+ * cd /home/pi/pico/Hongsa
  * export PICO_SDK_PATH=../../pico-sdk
  * cmake ..
  * make
