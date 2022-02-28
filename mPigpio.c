@@ -78,21 +78,21 @@ int main()
 	//check barrier is OPEN or CLOSE?
     gpio_put(PinOut5, 1);
     read = gpio_get(PinIn4);
-    if(read!=OpenGate)                      //GATECLOSE is OPEN 
+    if(read!=OpenGate)                      	//GATECLOSE is OPEN 
     {
-		gpio_put(PinOut6, 1);				//define value to ON 3.3vdc to PinOut6
-		while (read != OpenGate)            //limit switch #2 loop
+		gpio_put(PinOut6, 1);		//define value to ON 3.3vdc to PinOut6
+		while (read != OpenGate)        //limit switch #2 loop
         {
             read = gpio_get(PinIn4);		//read value from limit switch#2
             puts("GATECLOSE is OPEN\n");
-            sleep_ms(500);					//delay for 500ms.
+            sleep_ms(500);			//delay for 500ms.
         }
         puts("GATECLOSE is CLOSE\n");
-        gpio_put(PinOut5, 0);				//define value to OFF 3.3vdc to PinOut5
-        gpio_put(PinOut6, 0);				//define value to OFF 3.3vdc to PinOut6
+        gpio_put(PinOut5, 0);			//define value to OFF 3.3vdc to PinOut5
+        gpio_put(PinOut6, 0);			//define value to OFF 3.3vdc to PinOut6
 	}
-    puts("It's all OK!\n");					//everything OK. ready to run normally
-	while (1) 								//main loop
+    puts("It's all OK!\n");			//everything OK. ready to run normally
+	while (1) 				//main loop
 	{
 		read = 0;
 		gpio_put(PinOut1, 1);		
@@ -107,11 +107,11 @@ int main()
 		puts("Detect signal from PinIn1\n");
 		gpio_put(PinOut2, 1);				//send signal ON to GATE OPEN (set relay to NO)    
 		puts("Open GATE OPEN\n");  
-        sleep_ms(1000);                     //time delay for wait barrier up (wait 1 sec.)
-        gpio_put(PinOut3, 1);				//send signal ON to limit switch#1 (set relay to NO) 
+        sleep_ms(1000);                     			//time delay for wait barrier up (wait 1 sec.)
+        gpio_put(PinOut3, 1);					//send signal ON to limit switch#1 (set relay to NO) 
         puts("wait for signal from limit switch#1\n"); 
 
-		while (read != OpenGate)            //limit switch#1 loop
+		while (read != OpenGate)            		//limit switch#1 loop
         {
             read = gpio_get(PinIn2);
             sleep_ms(500);
@@ -119,42 +119,42 @@ int main()
         read = 0;
         puts("Open GATE OPEN complete\n");
         gpio_put(PinOut2, 0);			//send signal OFF to GATE OPEN
-        gpio_put(PinOut3, 0);         	//send signal OFF to limit switch#1
+        gpio_put(PinOut3, 0);         		//send signal OFF to limit switch#1
         puts("Close limit switch#1 \n"); 
         puts("CLOSE circuit GATE OPEN\nAnd wait for car/Truck pass 6 sec.\n");
         //#====================
-        sleep_ms(6000);                 //wait for car/truck pass six seconds (wait 6 sec.)
+        sleep_ms(6000);                 	//wait for car/truck pass six seconds (wait 6 sec.)
         //#====================
         puts("Open light switch\n");
         
-        while(read != OpenGate)         //light switch loop
+        while(read != OpenGate)         	//light switch loop
         {
 			puts("wait for signal from light switch\n");
             gpio_put(PinOut4, 1);		//Send signal enable to light sensor
-            sleep_ms(20);				//delay short time before read again
-            read = gpio_get(PinIn3);	//read signal from light sensor
+            sleep_ms(20);			//delay short time before read again
+            read = gpio_get(PinIn3);		//read signal from light sensor
             gpio_put(PinOut4, 0);		//temporary disable light sensor
-            sleep_ms(5000);				//wait 5 sec. for obstruction(car/truck) run past
+            sleep_ms(5000);			//wait 5 sec. for obstruction(car/truck) run past
         }
-        read = 0;						//restore default value of read
-        gpio_put(PinOut4, 0);         	//send signal CLOSE to light sensor
+        read = 0;				//restore default value of read
+        gpio_put(PinOut4, 0);         		//send signal CLOSE to light sensor
         puts("Close light switch\n");
-        sleep_ms(1000);					//wait for GATE CLOSE comedown
-        gpio_put(PinOut6, 1);        	//send signal ON to GATE CLOSE (set relay to NO)
+        sleep_ms(1000);				//wait for GATE CLOSE comedown
+        gpio_put(PinOut6, 1);        		//send signal ON to GATE CLOSE (set relay to NO)
         puts("Close GATE CLOSE\n");
-        gpio_put(PinOut5, 1);        	//send signal ON to limit switch#2 
+        gpio_put(PinOut5, 1);        		//send signal ON to limit switch#2 
         puts("wait for signal from limit switch#2");
-        while(read != OpenGate)         //limit switch#2 loop
+        while(read != OpenGate)         	//limit switch#2 loop
         {
             read = gpio_get(PinIn4);	
             sleep_ms(500);
         }
-        read = 0;								//restore default value of read
-        gpio_put(PinOut5, 0);        			//send signal OFF to limit switch#2 
+        read = 0;				//restore default value of read
+        gpio_put(PinOut5, 0);        		//send signal OFF to limit switch#2 
         printf("Close limit switch#2\n");
-        gpio_put(PinOut6, 0);           		//send signal OFF to GATE CLOSE
+        gpio_put(PinOut6, 0);           	//send signal OFF to GATE CLOSE
         puts("Close circuit GATE CLOSE\n");
-        gpio_put(PinOut1, 0); 					//clear buffer
+        gpio_put(PinOut1, 0); 			//clear buffer
         sleep_ms(1000);
         puts("Close gate barrier completely\n");
         
