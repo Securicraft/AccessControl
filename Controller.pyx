@@ -11,7 +11,7 @@ CHANGE LOG:
 3. Change method get timestamp from server. 02/11/2021
 4. Change method read RFID from decimal(10digits) to hexadecimal(8digits). 02/11/2021
 5. Change method insert cursor into blist on DownloadData(). 05/11/2021
-
+6. Improve everthing in main loop. 01/03/2022
 BUG FIXED
 1. Fixed system crash when network fail on CheckStateData(). 02/11/2021
 '''
