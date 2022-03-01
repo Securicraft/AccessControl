@@ -223,6 +223,7 @@ UserInfo    = "userinfo.txt";
 DOORTYPE    = 0;                    #Type of access, 0=ENTER and 1=EXIT, default = 0
 DOORDELAY   = 5;                    ###Delay times(sec.) for door open
 DOWNLOADTIME= 5;                    ###iNTERVAL TIME FOR CHECK USER INFORM.(Min.)
+IDLETIME    = 20;                    #Idle time after last access (sec.)
 
 SQLHOST     = '127.0.0.1';          ###MySQL or MSSQL LocalServer
 SQLUSER     = 'admin';
@@ -275,7 +276,7 @@ for line in DirList:
         DOORTYPE  = config['DEFAULT']['DOORTYPE'];
         DOORDELAY = int(config['DEFAULT']['DOORDELAY']);
         DOWNLOADTIME = int(config['DEFAULT']['DOWNLOADTIME']);
-        
+        IDLETIME  = int(config['DEFAULT']['IDLETIME']);
         IPAddr    = config['NETWORK']['ipaddress'];
         HostName  = config['NETWORK']['hostname'];
         NodeID    = config['NETWORK']['nodeid'];
@@ -291,7 +292,9 @@ for line in DirList:
                             '#DOORTYPE': "Type of access, 0=ENTER and 1=EXIT, default = 0",
                             'DOORDELAY' : DOORDELAY,
                             '#DOORRELAY': "Delay times(sec.) for door open then, close it., default = 5",
-                            'DOWNLOADTIME': DOWNLOADTIME
+                            'DOWNLOADTIME': DOWNLOADTIME,
+                            'IDLETIME': IDLETIME,
+                            '#IDLETIME': "#Idle time after last access (Sec.)"
                              };        
     
         config['SQLServer'] = {'SQLHOST':SQLHOST,
@@ -375,11 +378,12 @@ class CreateData:
                                         database= DATABASE)
                     
                     self.curs    = self.cnx.cursor();
-                    self.SQLList = ["SELECT * FROM userinfo"];
+                    self.SQLList = ["SELECT * FROM users"];
+                    #self.SQLList = ["SELECT * FROM userinfo"];
                     start = float(datetime.datetime.utcnow().timestamp());
                     self.curs.execute(self.SQLList[0]);
                     end = float(datetime.datetime.utcnow().timestamp());                    
-                    print("time in SQL SELECT = ", "{:.2f}".format(end - start), " seconds.");
+                    print("time in SQL SELECT = "+"{:.2f}".format(end - start)+" seconds.");
                     start = float(datetime.datetime.utcnow().timestamp());
                     if self.curs:
                         blist = [];
@@ -387,8 +391,8 @@ class CreateData:
                     
                     print(bcolors.MESSAGE+"Download UserInfromation from LocalServer complete");
                     end = float(datetime.datetime.utcnow().timestamp());
-                    print("time in insert data to list = ", "{:.2f}".format(end - start), " seconds.");
-                    print("With elements of list = ", "{:,.0f}".format(len(blist)), " element(s).");
+                    print("time in insert data to list = "+"{:.2f}".format(end - start)+" seconds.");
+                    print("With elements of list = "+"{:,.0f}".format(len(blist))+" element(s).");
                     self.curs.close();
                     self.cnx.close();
                 except Exception as err:
@@ -452,9 +456,13 @@ class CreateData:
                 self.cnx.close();
             
             except Exception as err:
-                print(bcolors.ERROR+"log table has fail\n Consult your admin immediately!");
+                print(bcolors.ERROR+"Insert log table has fail\nSystem attemp to write to text file named 'event.txt'\nConsult your admin immediately!");
                 print(bcolors.COMMON);
-                PrintException(err);                
+                PrintException(err);
+                if self.FileExist:
+                    self.write2file(EventString);
+                else:
+                    self.createfile(EventString);
         else:
             if self.FileExist:
                 self.write2file(EventString);
@@ -463,16 +471,15 @@ class CreateData:
         self.CheckStateData();    
         return
 
-
     def CheckStateData(self):
         # Return update time in last row of userinfo
-        global NewRecTime;
+        global NewRecTime, y;
         PORT = int();
         if 'mysql'.lower() in str(DB):
             PORT = 3306;
             try:
                 import socket;
-                s = socket.create_connection((SQLHOST, PORT), DOWNLOADTIME);
+                s = socket.create_connection((LOCALHOST, PORT), DOWNLOADTIME);
                 s.close();
                 del socket;
                 self.cnx  = DB.connect( user     = LOCALUSER,
@@ -480,12 +487,12 @@ class CreateData:
                                         host    = LOCALHOST,
                                         database= DATABASE)            
                 self.curs = self.cnx.cursor();
-                self.SQL  = "SELECT UPDATE_TIME FROM information_schema.tables WHERE  TABLE_SCHEMA = 'userinfo' AND TABLE_NAME = 'userinfo'";
+                self.SQL  = "SELECT UPDATE_TIME FROM information_schema.tables WHERE  TABLE_SCHEMA = 'userinfo' AND TABLE_NAME = 'users'";                
+                #self.SQL  = "SELECT UPDATE_TIME FROM information_schema.tables WHERE  TABLE_SCHEMA = 'userinfo' AND TABLE_NAME = 'userinfo'";
                 self.x = self.curs.execute(self.SQL);
-                self.x = self.curs.fetchone()[0];
-                
+                self.x = self.curs.fetchone();
                 if self.x != None:
-                    NewRecTime =  datetime.datetime.timestamp(self.x);
+                    NewRecTime =  datetime.datetime.timestamp(self.x[0]);
                 else:
                     NewRecTime = float();
                 self.curs.close();
@@ -508,13 +515,13 @@ class CreateData:
     def write2file(self, argv):                         ###adding event to text file when user access at this time after open the door
         self.FilePath = os.getcwd()+'/'+EventFile;
         self.file = open(self.FilePath,'a');
-        self.file.writelines("log table has fail\n"+argv +'\n');
+        self.file.writelines(argv +'\n');
         self.file.close();
         
     def createfile(self,argv):                          ###write event to text file when found server get it and delete it after save to transaction database
         self.FilePath = os.getcwd()+'/'+EventFile;
         self.file=open(self.FilePath, 'w');
-        self.file.write("log table has fail\n"+argv+'\n');
+        self.file.write(argv+'\n');
         self.file.close();
         self.FileExist = os.path.isfile(os.getcwd()+'/'+EventFile);
         
@@ -564,13 +571,13 @@ class BReader(Thread):                                  #Extend threading class
                         self.key_lookup = self.scancodes.get(self.eventData.scancode)
                         self.buffer = str(self.buffer) + str(self.key_lookup)
                         if(self.eventData.scancode == 28):
-                            file = open("barcode", "w");
-                            file.write(str(self.buffer[:-1]).strip());
-                            file.close();                        
+                            #file = open("barcode", "w");
+                            #file.write(str(self.buffer[:-1]).strip());
+                            #file.close();                        
                             return;
         except:
             PrintException(str(sys.exc_info()[0]));
-            print( bcolors.ERROR+"Unexpected error:", sys.exc_info());
+            print( bcolors.ERROR+"Unexpected error: "+sys.exc_info());
             pass;
 
     def run(self):                              #overridng run method (run is built-in method)
@@ -623,11 +630,11 @@ for j in i:
     if "RFID" in j:
         print("Now we connected to Reader(RFID)   : "+ j);
         #Create RFID Reader threads
-        RFIDReader  = RFID();
+        #RFIDReader  = RFID();
     elif "BARCODE" in j:
         print("Now we connected to Reader(Barcode): "+ j);
         #Create BarCode Reader threads
-        BR =  BReader();
+        #BR =  BReader();
 if len(i)==0:
     print("None of reader!\nSystem will shutdown NOW!")
     raise SystemExit
@@ -663,123 +670,68 @@ time.sleep(2);
 print(bcolors.MESSAGE+"Program started");
 while Control:
     try:
-        if os.path.isfile('barcode'):                               #Read from Barcode
-            file = open("barcode", "r")
-            Bafter = file.readline();
-            file.close();
-            os.remove("barcode");                                    
-            if Bafter: # != Bbefore:                                   #Barcode is True AND new card present
-                ReturnCode  = Data.SearchFromCode(Bafter);
-                if not ReturnCode:                                  #Unsuccess to search ssn code
-                    ssn         = "B"+str(Bafter);
-                    Right       = VerifyCode[0];
-                    RFret       = "BarCodeOnly";
-                else:                                               #Success search 
-                    Bbefore     = Bafter;
-                    ssn         = "B"+Bafter;
-                    Right       = VerifyCode[1];
-                    RFret       = Bafter;
-                
-                DateAndTime = time.strftime("%Y-%m-%d %H:%M:%S");
-                EventString = "SSN="+ssn+", CheckTime="+DateAndTime+", CheckType="+CheckType+", VerifyCode="+ Right+", SensorID="+str(NodeID);
-                if Right=='0': line1 = "Access Deny";
-                else: line1 = "Success";
-                if NOLCD:
-                    print(bcolors.OKCYAN+line1, "ID :", RFret);
-                else:
-                    lcd.print_line(line1, line=0, align='LEFT');
-                    lcd.print_line("ID"+RFret, line=1, align='LEFT');
-                RightCheck();
-                Data.UploadData();
-                EventString = "";
-                if NOLCD:
-                    print(bcolors.OKCYAN+"ID :", RFret);
-                else:
-                    lcd.print_line("Welcome.........", line=0, align='LEFT');
-                    lcd.print_line(strftime("%Y-%m-%d %H:%M:%S"), line=1, align='LEFT');
-
-            #elif Bafter == Bbefore:                                 #Barcode is True AND privious user entry present
-            #    pass;                
-        elif "RFIDReader" in locals():                               #Read from RFID card
-            (error, tagtype) = RFIDReader.request();
-            if not error:
-                RFret   = "";
-                a       = [];
-                z       = "";
-                (error, RFuid) = RFIDReader.anticoll();
-                if len(RFuid) < 5:
-                    break;
-                RFret   = (str(RFuid[0])+str(RFuid[1])+str(RFuid[2])+str(RFuid[3])+str(RFuid[4]));
-                '''
-                # Read RFID in Hexadecimal format Then, bitwise it===========================================================
-                for i in range(len(RFuid)-1, 0, -1):
-                    if len(hex(RFuid[i])[2:]) == 1:
-                        z = "0"+str(hex(RFuid[i])[2:]);
-                        a.append(z);
-                    else:
-                        a.append(hex(RFuid[i])[2:]);
-                if len(hex(RFuid[0])[2:]) == 1:
-                    z = "0"+str(hex(RFuid[0])[2:]);
-                    a.append(z);
-                else:
-                    a.append(hex(RFuid[0])[2:]);
-                a.pop(0);                                           #Cut element in list at position 0
-                RFret = a[0]+a[1]+a[2]+a[3];
-                #===========================================================================================================
-                '''
-                Rafter  = RFret;                
-                #if Rafter == Rbefore:                              #RFID card is True AND privious user entry present
-                #    pass;
-                #else:                                              #RFID card is True AND new card present
-                if Rafter:
-                    Rbefore = Rafter;                               #Protect use privious card
-                    ReturnCode  = Data.SearchFromCode(RFret);
-                    #print("ReturnCode is : ", ReturnCode); 
-                    ssn         = "R"+RFret;
-                    if not ReturnCode:                              #Unsuccess to search ssn code
-                        Right       = VerifyCode[0];
-                    else:                                           #Success search 
-                        Right    = VerifyCode[1];
-                    DateAndTime = time.strftime("%Y-%m-%d %H:%M:%S");
-                    EventString = "SSN="+ssn+", CheckTime="+DateAndTime+", CheckType="+CheckType+", VerifyCode="+ Right+", SensorID="+str(NodeID);
-                    if Right=='0': line1 = "Access Deny";
-                    else: line1 = "Success";
-                    if NOLCD:
-                        print(bcolors.OKCYAN+line1, "\n", "ID :", RFret);
-                    else:
-                        lcd.clear();
-                        lcd.print_line(line1, line=0, align='LEFT');
-                        lcd.print_line("ID"+RFret, line=1, align='LEFT');
-                    RightCheck();
-                    Data.UploadData();
-                    EventString = "";
-                    if NOLCD:
-                        print(bcolors.OKCYAN+"ID :", RFret);
-                    else:
-                        lcd.print_line("Welcome.........", line=0, align='LEFT');
-                        lcd.print_line(strftime("%Y-%m-%d %H:%M:%S"), line=1, align='LEFT');                
+        RFuid = input("Verify your your card...");
+        RFret   = str();
+        try:
+            v = int(RFuid);                 #Read from Barcode
+            RFret = RFuid;
+            u = "BARCODE";
+        except ValueError:                  #Read from RFID
+            RFret = RFuid;
+            u = "RFID";
+            # Start RFID bitwise ===========================================================
+            '''
+            RFret   = str();
+            for i in range(len(RFuid), 0, -1):
+                RFret=RFret+str(RFuid[i-1]);
+            if (len(RFret) < 8):
+                RFret = RFret + str("0");
+            '''
+            # End bitwise ==================================================================    
+        Rafter  = RFret;
+        #if Rafter == Rbefore:                              #RFID card is True AND privious user entry present
+            #pass;
+        #else:                                              #RFID card is True AND new card present
+        if Rafter:
+            Rbefore = Rafter;                               #Protect use privious card
+            ReturnCode  = Data.SearchFromCode(RFret);
+            if u == "BARCODE":ssn = "B"+RFret;
+            else:ssn = "R"+RFret;                           #Set access type by 1st.byte
+            if not ReturnCode:                              #Unsuccess to search ssn code
+                Right       = VerifyCode[0];
+            else:                                           #Success search 
+                Right    = VerifyCode[1];
+            DateAndTime = time.strftime("%Y-%m-%d %H:%M:%S");
+            EventString = "SSN="+ssn+", CheckTime="+DateAndTime+", CheckType="+CheckType+", VerifyCode="+ Right+", SensorID="+str(NodeID);
+            if Right=='0': line1 = "Access Deny";
+            else: line1 = "Success";
+            if NOLCD:
+                print(bcolors.OKCYAN+line1+"\n"+"ID : "+RFret);
+            else:
+                lcd.clear();
+                lcd.print_line(line1, line=0, align='LEFT');
+                lcd.print_line("ID"+RFret, line=1, align='LEFT');
+            RightCheck();
+            Data.UploadData();
     except UnicodeEncodeError as err:
         PrintException(str(sys.exc_info()[0]));
-        print( bcolors.ERROR+"Unexpected error:", sys.exc_info())
+        print( bcolors.ERROR+"Unexpected error: "+sys.exc_info())
         IO.cleanup();
         
     if OldRecTime != NewRecTime:                                    #User table in database has change
         if NOLCD:
             print("Database has change\n Update data please wait...")
         else:
-            lcd.clear();
-            lcd.print_line("Update Database", line=0, align='LEFT');
-            lcd.print_line("try again...", line=1, align='LEFT');                
+            lcd.clear();  
         Data.DownloadData();
         OldRecTime = NewRecTime;                                    #Change new timestamp for monitor user table next time
+    else:
         if NOLCD:
-            print(bcolors.OKCYAN+"ID :", RFret);
+            pass;
         else:
             lcd.print_line("Welcome.........", line=0, align='LEFT');
             lcd.print_line(strftime("%Y-%m-%d %H:%M:%S"), line=1, align='LEFT');                   
-    else:
-        pass;
-
+    EventString = "";
 #=======================================#
 #========= programme end here ==========#
 #=======================================#
