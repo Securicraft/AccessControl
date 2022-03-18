@@ -238,6 +238,11 @@ Raspi assign 16 pins for INPUT/OUTPUT:
 Other pins for SEND/RECIEVE signal(SPI, I2C, OneWire, Rx/Tx etc.)
 '''
 SPIN    = 36;                           ###Pin number on GPIO that use for activated DOOR signal
+RFID    = 35
+BCODE   = 37
+OPEN    = 38
+CLOSE   = 40
+
 
 ReturnCode = [];
 blist = [];                             ###manisfest list name 'blist' that will store userinfo.txt along this script
@@ -513,13 +518,18 @@ def RightCheck():
     if Right == "1":
         IO.setmode(IO.BOARD);
         IO.setup(SPIN,IO.OUT);
-        IO.output(SPIN, IO.HIGH);  
+        IO.output(SPIN, IO.HIGH);
+        IO.setup(OPEN,IO.OUT);
+        IO.output(OPEN, IO.HIGH);  
         time.sleep(DOORDELAY);
         IO.cleanup();
     else:
         if NOLCD:
             return;
         else:
+            IO.setmode(IO.BOARD);
+            IO.setup(CLOSE,IO.OUT);
+            IO.output(CLOSE, IO.HIGH);
             lcd.set_backlight(0);
             time.sleep(0.25);
             lcd.set_backlight(1);
@@ -528,6 +538,8 @@ def RightCheck():
             time.sleep(0.25);
             lcd.set_backlight(1);
             time.sleep(0.25);
+            time.sleep(DOORDELAY);
+            IO.cleanup();
     return;
 
 #=======================================#
@@ -598,9 +610,15 @@ while Control:
             RFuid = input();
         try:
             v = int(RFuid);                 #Read from Barcode
+            IO.setmode(IO.BOARD);
+            IO.setup(BCODE,IO.OUT);         #Show LED
+            IO.output(BCODE, IO.HIGH);
             RFret = RFuid;
             u = "BARCODE";
         except ValueError:                  #Read from RFID
+            IO.setmode(IO.BOARD);
+            IO.setup(RFID,IO.OUT);         #Show LED
+            IO.output(RFID, IO.HIGH);
             RFret = RFuid;
             u = "RFID";
             # Start RFID bitwise ===========================================================
@@ -650,8 +668,8 @@ while Control:
     except UnicodeEncodeError as err:
         PrintException(str(sys.exc_info()[0]));
         print( bcolors.ERROR+"Unexpected error:", sys.exc_info())
-        IO.cleanup();
-        
+    IO.cleanup();
+
     if OldRecTime != NewRecTime:                                    #User table in database has change
         if NOLCD:
             print(bcolors.WARNING+"Database has change\nUpdate data please wait...");
