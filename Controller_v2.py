@@ -237,11 +237,11 @@ Raspi assign 16 pins for INPUT/OUTPUT:
 36, 37, 38, 40
 Other pins for SEND/RECIEVE signal(SPI, I2C, OneWire, Rx/Tx etc.)
 '''
-SPIN    = 36;                           ###Pin number on GPIO that use for activated DOOR signal
-RFID    = 35
-BCODE   = 37
-OPEN    = 38
-CLOSE   = 40
+SPIN    = 36;                       ###Pin number on GPIO that use for activated DOOR signal
+RFID    = 35;                       #Read from RFID device
+BCODE   = 37;                       #Read from Barcode
+OPEN    = 38;                       #Open door success
+CLOSE   = 40;                       #Open door unsuccess
 
 
 ReturnCode = [];
@@ -524,12 +524,12 @@ def RightCheck():
         time.sleep(DOORDELAY);
         IO.cleanup();
     else:
+        IO.setmode(IO.BOARD);
+        IO.setup(CLOSE,IO.OUT);
+        IO.output(CLOSE, IO.HIGH);
         if NOLCD:
             return;
         else:
-            IO.setmode(IO.BOARD);
-            IO.setup(CLOSE,IO.OUT);
-            IO.output(CLOSE, IO.HIGH);
             lcd.set_backlight(0);
             time.sleep(0.25);
             lcd.set_backlight(1);
@@ -538,8 +538,7 @@ def RightCheck():
             time.sleep(0.25);
             lcd.set_backlight(1);
             time.sleep(0.25);
-            time.sleep(DOORDELAY);
-            IO.cleanup();
+        IO.cleanup();
     return;
 
 #=======================================#
@@ -655,7 +654,7 @@ while Control:
                 print(bcolors.OKCYAN+line1+"ID :"+RFret);
                 lcd.clear();
                 lcd.print_line(line1, line=0, align='LEFT');
-                lcd.print_line("ID"+RFret, line=1, align='LEFT');
+                lcd.print_line("ID: "+RFret, line=1, align='LEFT');
             RightCheck();
             Data.UploadData();
             EventString = "";
