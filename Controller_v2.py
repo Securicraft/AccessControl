@@ -600,13 +600,13 @@ print(bcolors.OKCYAN+"Everything is ready, please wait...");
 time.sleep(2);
 print(bcolors.MESSAGE+"Program started");
 print(bcolors.COMMON);
-while Control:
+while Control:          #Main loop
     try:
         RFuid = str();  #reset RFuid value to blank
         RFret = str();  #reset RFret value to blank
         print("Touch your ID card...");
         while len(RFuid) == 0:
-            RFuid = input();
+            RFuid = sys.stdin.readline();
         try:
             v = int(RFuid);                 #Read from Barcode
             IO.setmode(IO.BOARD);
