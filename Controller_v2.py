@@ -422,7 +422,7 @@ class CreateData:
     def SearchFromCode(self, args):
         for self.tup in blist:
             if args in self.tup:return self.tup;
-            
+         
     def UploadData(self):
         'Code below for upload data to MS SQL Server'
         if 'mysql'.lower() in str(DB):
@@ -606,7 +606,7 @@ while Control:          #Main loop
         RFret = str();  #reset RFret value to blank
         print("Touch your ID card...");
         while len(RFuid) == 0:
-            RFuid = sys.stdin.readline();
+            RFuid = sys.stdin.readline().strip();   #Cut ascii "\n" from string by strip()
         try:
             v = int(RFuid);                 #Read from Barcode
             IO.setmode(IO.BOARD);
@@ -620,24 +620,10 @@ while Control:          #Main loop
             IO.output(RFID, IO.HIGH);
             RFret = RFuid;
             u = "RFID";
-            # Start RFID bitwise ===========================================================
-            '''
-            RFret   = str();
-            for i in range(len(RFuid), 0, -1):
-                RFret=RFret+str(RFuid[i-1]);
-            if (len(RFret) < 8):
-                RFret = RFret + str("0");
-            '''
-            # End bitwise ==================================================================    
-        #print("RFret= ", RFret, u)
         Rafter  = RFret;
-        #if Rafter == Rbefore:                              #RFID card is True AND privious user entry present
-            #pass;
-        
-        #else:                                              #RFID card is True AND new card present
         if Rafter:
             Rbefore = Rafter;                               #Protect use privious card
-            ReturnCode  = Data.SearchFromCode(RFret);
+            ReturnCode = [s for s in blist if RFret in s];
             if u == "BARCODE":ssn = "B"+RFret;
             else:ssn = "R"+RFret;                           #Set access type by 1st.byte
             if not ReturnCode:                              #Unsuccess to search ssn code
